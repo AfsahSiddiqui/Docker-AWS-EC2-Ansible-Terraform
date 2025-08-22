@@ -1,0 +1,46 @@
+- hosts: ec2
+  become: true
+  tasks:
+    - name: Install Docker
+      yum:
+        name: docker
+        state: present
+
+    - name: Start Docker
+      service:
+        name: docker
+        state: started
+        enabled: true
+
+    - name: Add ec2-user to docker group
+      user:
+        name: ec2-user
+        groups: docker
+        append: yes
+
+    - name: Copy source code
+      copy:
+        src: ../app/src
+        dest: /home/ec2-user/app/
+
+    - name: Copy pom.xml
+      copy:
+        src: ../app/pom.xml
+        dest: /home/ec2-user/app/
+
+    - name: Copy Dockerfile
+      copy:
+        src: ../Dockerfile
+        dest: /home/ec2-user/
+
+    - name: Build Docker image
+      command: docker build -t spring-app .
+
+    - name: Run the container
+      docker_container:
+        name: spring-app
+        image: spring-app
+        state: started
+        ports:
+          - "8080:8080"
+
